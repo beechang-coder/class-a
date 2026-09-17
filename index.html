@@ -291,7 +291,7 @@
             </div>
         </div>
         <div style="margin-top: 15px;">
-            <button type="button" id="addBonusBtn" class="success" onclick="addBonusRecord(event)">新增加分紀錄</button>
+            <button type="button" id="addBonusBtn" class="success" onclick="addBonusRecord()">新增加分紀錄</button>
         </div>
 
         <!-- 加分紀錄列表 -->
@@ -477,13 +477,12 @@
         });
     }
 
-    function addBonusRecord(event) {
-        if (event) event.preventDefault();
+    function addBonusRecord() {
         if (!currentClassName) return;
         
         const btn = document.getElementById('addBonusBtn');
-        if (btn.disabled) return; // 避免重複點擊
-        
+        if (btn.disabled) return; 
+
         const studentName = document.getElementById('bonusStudent').value;
         const date = document.getElementById('bonusDate').value;
         const category = document.getElementById('bonusCategory').value;
@@ -498,34 +497,45 @@
             return;
         }
 
-        // 鎖定按鈕 0.5 秒防手殘連點
+        // 鎖定按鈕 1 秒，防止任何重複連點
         btn.disabled = true;
         setTimeout(() => {
             btn.disabled = false;
-        }, 500);
+        }, 1000);
+
+        // 產生獨立且帶隨機碼的唯一 ID字串
+        const uniqueId = 'b_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
 
         const newRecord = {
-            id: Date.now().toString() + Math.random().toString(36).substr(2, 5), // 絕對唯一的 ID
+            id: uniqueId,
             date: date,
             name: studentName,
             category: category,
             points: parseInt(points)
         };
 
-        if (!classesData[currentClassName].bonuses) {
+        if (!Array.isArray(classesData[currentClassName].bonuses)) {
             classesData[currentClassName].bonuses = [];
         }
         
-        classesData[currentClassName].bonuses.unshift(newRecord);
-
-        saveToLocalStorage();
-        updateBonusTable();
+        // 確保不會有重複的 ID 被塞進去
+        const exists = classesData[currentClassName].bonuses.some(b => b.id === uniqueId);
+        if (!exists) {
+            classesData[currentClassName].bonuses.unshift(newRecord);
+            saveToLocalStorage();
+            updateBonusTable();
+        }
     }
 
     function deleteBonusRecord(recordId) {
         if (!currentClassName) return;
+        
         let bonuses = classesData[currentClassName].bonuses;
-        classesData[currentClassName].bonuses = bonuses.filter(b => b.id != recordId);
+        if (!bonuses) return;
+
+        // 精準透過唯一 id 過濾掉要刪除的那筆，避免誤刪其他紀錄
+        classesData[currentClassName].bonuses = bonuses.filter(b => String(b.id) !== String(recordId));
+        
         saveToLocalStorage();
         updateBonusTable();
     }
@@ -534,7 +544,7 @@
         if (!currentClassName) return;
         const bonuses = classesData[currentClassName].bonuses || [];
         const tbody = document.getElementById('bonusTableBody');
-        tbody.innerHTML = '';
+        tbody.innerHTML = ''; // 每次更新前強制清空表格，防止殘留重複渲染
 
         if (bonuses.length === 0) {
             tbody.innerHTML = `<tr><td colspan="5" style="color: #6b7280;">尚無加分紀錄</td></tr>`;
