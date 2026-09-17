@@ -194,8 +194,8 @@
             <select id="classSelect" onchange="switchClass()">
                 <option value="">-- 尚無班級，請新增 --</option>
             </select>
-            <button onclick="openNewClassPrompt()">新增班級</button>
-            <button class="danger" onclick="deleteCurrentClass()">刪除目前班級</button>
+            <button type="button" onclick="openNewClassPrompt()">新增班級</button>
+            <button type="button" class="danger" onclick="deleteCurrentClass()">刪除目前班級</button>
         </div>
     </div>
 
@@ -206,7 +206,7 @@
         <label for="importData">編輯 / 貼上班級名單：</label>
         <textarea id="importData" placeholder="格式範例：&#10;1	王小明	男&#10;2	李小華	女"></textarea>
         <div class="hint">支援格式：座號、姓名、性別（抽籤時需要判斷性別，但加分紀錄介面會自動隱藏學號與性別）</div>
-        <button onclick="saveClassData()" style="margin-top: 10px;">儲存並更新名單</button>
+        <button type="button" onclick="saveClassData()" style="margin-top: 10px;">儲存並更新名單</button>
     </div>
 
     <!-- 抽籤操作區 -->
@@ -222,7 +222,7 @@
                 </select>
             </div>
             <div style="align-self: flex-end;">
-                <button id="drawBtn" onclick="startDraw()">開始抽籤！</button>
+                <button type="button" id="drawBtn" onclick="startDraw()">開始抽籤！</button>
             </div>
         </div>
 
@@ -291,7 +291,7 @@
             </div>
         </div>
         <div style="margin-top: 15px;">
-            <button class="success" onclick="addBonusRecord()">新增加分紀錄</button>
+            <button type="button" class="success" onclick="addBonusRecord(event)">新增加分紀錄</button>
         </div>
 
         <!-- 加分紀錄列表 -->
@@ -322,7 +322,6 @@
     let currentClassName = '';
 
     window.onload = function() {
-        // 預設日期為今天
         document.getElementById('bonusDate').valueAsDate = new Date();
         updateClassSelectOptions();
     };
@@ -383,7 +382,6 @@
             return;
         }
 
-        // 相容舊資料格式（如果之前儲存的只是陣列）
         if (Array.isArray(classesData[currentClassName])) {
             classesData[currentClassName] = {
                 students: classesData[currentClassName],
@@ -473,14 +471,16 @@
 
         students.forEach(s => {
             const opt = document.createElement('option');
-            opt.value = s.name; // 以姓名為主
+            opt.value = s.name;
             opt.textContent = `${s.id} 號 - ${s.name}`;
             select.appendChild(opt);
         });
     }
 
-    function addBonusRecord() {
+    function addBonusRecord(event) {
+        if (event) event.preventDefault(); // 防止重複觸發
         if (!currentClassName) return;
+        
         const studentName = document.getElementById('bonusStudent').value;
         const date = document.getElementById('bonusDate').value;
         const category = document.getElementById('bonusCategory').value;
@@ -496,18 +496,17 @@
         }
 
         const newRecord = {
-            id: Date.now(), // 唯一識別碼
+            id: Date.now() + Math.random(), // 確保 ID 唯一
             date: date,
             name: studentName,
             category: category,
             points: parseInt(points)
         };
 
-        classesData[currentClassName].bonuses.unshift.call(classesData[currentClassName].bonuses, newRecord);
-        // 確保陣列存在
         if (!classesData[currentClassName].bonuses) {
             classesData[currentClassName].bonuses = [];
         }
+        
         classesData[currentClassName].bonuses.unshift(newRecord);
 
         saveToLocalStorage();
@@ -540,7 +539,7 @@
                 <td><strong>${b.name}</strong></td>
                 <td>${b.category}</td>
                 <td style="color: var(--success-color); font-weight: bold;">+${b.points} 分</td>
-                <td><button class="danger" style="padding: 4px 8px; font-size: 12px;" onclick="deleteBonusRecord(${b.id})">刪除</button></td>
+                <td><button type="button" class="danger" style="padding: 4px 8px; font-size: 12px;" onclick="deleteBonusRecord(${b.id})">刪除</button></td>
             `;
             tbody.appendChild(tr);
         });
