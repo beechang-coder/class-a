@@ -291,7 +291,7 @@
             </div>
         </div>
         <div style="margin-top: 15px;">
-            <button type="button" class="success" onclick="addBonusRecord(event)">新增加分紀錄</button>
+            <button type="button" id="addBonusBtn" class="success" onclick="addBonusRecord(event)">新增加分紀錄</button>
         </div>
 
         <!-- 加分紀錄列表 -->
@@ -478,8 +478,11 @@
     }
 
     function addBonusRecord(event) {
-        if (event) event.preventDefault(); // 防止重複觸發
+        if (event) event.preventDefault();
         if (!currentClassName) return;
+        
+        const btn = document.getElementById('addBonusBtn');
+        if (btn.disabled) return; // 避免重複點擊
         
         const studentName = document.getElementById('bonusStudent').value;
         const date = document.getElementById('bonusDate').value;
@@ -495,8 +498,14 @@
             return;
         }
 
+        // 鎖定按鈕 0.5 秒防手殘連點
+        btn.disabled = true;
+        setTimeout(() => {
+            btn.disabled = false;
+        }, 500);
+
         const newRecord = {
-            id: Date.now() + Math.random(), // 確保 ID 唯一
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 5), // 絕對唯一的 ID
             date: date,
             name: studentName,
             category: category,
@@ -516,7 +525,7 @@
     function deleteBonusRecord(recordId) {
         if (!currentClassName) return;
         let bonuses = classesData[currentClassName].bonuses;
-        classesData[currentClassName].bonuses = bonuses.filter(b => b.id !== recordId);
+        classesData[currentClassName].bonuses = bonuses.filter(b => b.id != recordId);
         saveToLocalStorage();
         updateBonusTable();
     }
@@ -539,7 +548,7 @@
                 <td><strong>${b.name}</strong></td>
                 <td>${b.category}</td>
                 <td style="color: var(--success-color); font-weight: bold;">+${b.points} 分</td>
-                <td><button type="button" class="danger" style="padding: 4px 8px; font-size: 12px;" onclick="deleteBonusRecord(${b.id})">刪除</button></td>
+                <td><button type="button" class="danger" style="padding: 4px 8px; font-size: 12px;" onclick="deleteBonusRecord('${b.id}')">刪除</button></td>
             `;
             tbody.appendChild(tr);
         });
