@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>班級抽籤與加分系統</title>
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --primary-hover: #4338ca;
+            --success-color: #059669;
+            --success-hover: #047857;
+            --danger-color: #dc2626;
+            --danger-hover: #b91c1c;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-color: #1f2937;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 24px;
+        }
+
+        h2 {
+            font-size: 1.25rem;
+            color: var(--text-color);
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 8px;
+            margin-top: 30px;
+        }
+
+        .section {
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        input[type="text"], input[type="date"], select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            height: 120px;
+            resize: vertical;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        button.success {
+            background-color: var(--success-color);
+        }
+        button.success:hover {
+            background-color: var(--success-hover);
+        }
+
+        button.danger {
+            background-color: var(--danger-color);
+        }
+        button.danger:hover {
+            background-color: var(--danger-hover);
+        }
+
+        button:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .class-selector-bar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .result-box {
+            background: #eef2ff;
+            border: 2px dashed var(--primary-color);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .result-name {
+            font-size: 32px;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin: 10px 0;
+        }
+
+        .stats {
+            font-size: 14px;
+            color: #6b7280;
+            margin-top: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            border: 1px solid #e5e7eb;
+            padding: 8px 12px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        th {
+            background-color: #f9fafb;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        @media (max-width: 600px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>班級抽籤與加分系統</h1>
+
+    <!-- 班級切換與管理列 -->
+    <div class="section">
+        <label for="classSelect">選擇班級：</label>
+        <div class="class-selector-bar">
+            <select id="classSelect" onchange="switchClass()">
+                <option value="">-- 尚無班級，請新增 --</option>
+            </select>
+            <button onclick="openNewClassPrompt()">新增班級</button>
+            <button class="danger" onclick="deleteCurrentClass()">刪除目前班級</button>
+        </div>
+    </div>
+
+    <hr style="border:0; border-top:1px solid #e5e7eb; margin: 20px 0;">
+
+    <!-- 編輯/匯入名單區 -->
+    <div class="section" id="editSection" style="display:none;">
+        <label for="importData">編輯 / 貼上班級名單：</label>
+        <textarea id="importData" placeholder="格式範例：&#10;1	王小明	男&#10;2	李小華	女"></textarea>
+        <div class="hint">支援格式：座號、姓名、性別（抽籤時需要判斷性別，但加分紀錄介面會自動隱藏學號與性別）</div>
+        <button onclick="saveClassData()" style="margin-top: 10px;">儲存並更新名單</button>
+    </div>
+
+    <!-- 抽籤操作區 -->
+    <div class="section" id="drawSection" style="display:none;">
+        <h2>隨機抽籤</h2>
+        <div class="controls" style="margin-top: 15px;">
+            <div>
+                <label for="genderFilter">性別篩選：</label>
+                <select id="genderFilter" style="padding: 8px; border-radius: 6px; border: 1px solid #d1d5db;">
+                    <option value="all">不拘（全部）</option>
+                    <option value="男">僅抽男生</option>
+                    <option value="女">僅抽女生</option>
+                </select>
+            </div>
+            <div style="align-self: flex-end;">
+                <button id="drawBtn" onclick="startDraw()">開始抽籤！</button>
+            </div>
+        </div>
+
+        <!-- 抽籤結果顯示 -->
+        <div class="result-box">
+            <div style="font-size: 16px; font-weight: 600;">抽中得主</div>
+            <div class="result-name" id="resultDisplay">準備就緒</div>
+            <div class="stats" id="statsDisplay">尚未載入名單</div>
+        </div>
+
+        <!-- 名單列表預覽 -->
+        <div style="margin-top: 20px;">
+            <h3>目前班級名單 (<span id="totalCount">0</span>)</h3>
+            <div style="max-height: 180px; overflow-y: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>座號</th>
+                            <th>姓名</th>
+                            <th>性別</th>
+                            <th>狀態</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加分紀錄區 -->
+    <div class="section" id="bonusSection" style="display:none;">
+        <h2>學生加分紀錄</h2>
+        <div style="margin-top: 15px;" class="grid-2">
+            <div>
+                <label for="bonusStudent">選擇學生：</label>
+                <select id="bonusStudent">
+                    <option value="">-- 請選擇學生 --</option>
+                </select>
+            </div>
+            <div>
+                <label for="bonusDate">日期：</label>
+                <input type="date" id="bonusDate">
+            </div>
+        </div>
+        <div style="margin-top: 15px;" class="grid-2">
+            <div>
+                <label for="bonusCategory">加分項目：</label>
+                <select id="bonusCategory">
+                    <option value="課堂表現">課堂表現</option>
+                    <option value="回答問題">回答問題</option>
+                    <option value="作業優良">作業優良</option>
+                    <option value="小考滿分">小考滿分</option>
+                    <option value="熱心助人">熱心助人</option>
+                    <option value="其他加分">其他加分</option>
+                </select>
+            </div>
+            <div>
+                <label for="bonusPoints">加分：</label>
+                <select id="bonusPoints">
+                    <option value="1">1 分</option>
+                    <option value="2">2 分</option>
+                    <option value="3">3 分</option>
+                    <option value="5" selected>5 分</option>
+                    <option value="10">10 分</option>
+                </select>
+            </div>
+        </div>
+        <div style="margin-top: 15px;">
+            <button class="success" onclick="addBonusRecord()">新增加分紀錄</button>
+        </div>
+
+        <!-- 加分紀錄列表 -->
+        <div style="margin-top: 20px;">
+            <h3>加分歷史紀錄</h3>
+            <div style="max-height: 220px; overflow-y: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>日期</th>
+                            <th>姓名</th>
+                            <th>加分項目</th>
+                            <th>分數</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bonusTableBody">
+                        <!-- 動態插入 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let classesData = JSON.parse(localStorage.getItem('my_classes_data')) || {};
+    let currentClassName = '';
+
+    window.onload = function() {
+        // 預設日期為今天
+        document.getElementById('bonusDate').valueAsDate = new Date();
+        updateClassSelectOptions();
+    };
+
+    function updateClassSelectOptions(selectName = '') {
+        const select = document.getElementById('classSelect');
+        select.innerHTML = '<option value="">-- 請選擇班級 --</option>';
+
+        const classNames = Object.keys(classesData);
+        classNames.forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            select.appendChild(opt);
+        });
+
+        if (classNames.length > 0) {
+            if (selectName && classesData[selectName]) {
+                select.value = selectName;
+            } else {
+                select.value = classNames[0];
+            }
+            switchClass();
+        } else {
+            currentClassName = '';
+            document.getElementById('editSection').style.display = 'none';
+            document.getElementById('drawSection').style.display = 'none';
+            document.getElementById('bonusSection').style.display = 'none';
+        }
+    }
+
+    function openNewClassPrompt() {
+        const className = prompt('請輸入新班級名稱（例如：七年一班）：');
+        if (!className) return;
+        
+        const trimmedName = className.trim();
+        if (classesData[trimmedName]) {
+            alert('這個班級名稱已經存在！');
+            return;
+        }
+
+        classesData[trimmedName] = {
+            students: [],
+            bonuses: []
+        };
+        saveToLocalStorage();
+        updateClassSelectOptions(trimmedName);
+    }
+
+    function switchClass() {
+        const select = document.getElementById('classSelect');
+        currentClassName = select.value;
+
+        if (!currentClassName) {
+            document.getElementById('editSection').style.display = 'none';
+            document.getElementById('drawSection').style.display = 'none';
+            document.getElementById('bonusSection').style.display = 'none';
+            return;
+        }
+
+        // 相容舊資料格式（如果之前儲存的只是陣列）
+        if (Array.isArray(classesData[currentClassName])) {
+            classesData[currentClassName] = {
+                students: classesData[currentClassName],
+                bonuses: []
+            };
+        }
+
+        document.getElementById('editSection').style.display = 'block';
+        document.getElementById('drawSection').style.display = 'block';
+        document.getElementById('bonusSection').style.display = 'block';
+
+        const classObj = classesData[currentClassName];
+        let textContent = classObj.students.map(s => `${s.id}\t${s.name}\t${s.gender}`).join('\n');
+        document.getElementById('importData').value = textContent;
+
+        updateTable();
+        updateBonusStudentDropdown();
+        updateBonusTable();
+        document.getElementById('resultDisplay').innerText = '準備就緒';
+    }
+
+    function saveClassData() {
+        if (!currentClassName) return;
+
+        const rawText = document.getElementById('importData').value.trim();
+        const lines = rawText.split('\n');
+        let newStudents = [];
+
+        for (let line of lines) {
+            const parts = line.trim().split(/\s+/);
+            if (parts.length >= 3) {
+                newStudents.push({
+                    id: parts[0],
+                    name: parts[1],
+                    gender: parts[2],
+                    drawn: false
+                });
+            }
+        }
+
+        classesData[currentClassName].students = newStudents;
+        saveToLocalStorage();
+        updateTable();
+        updateBonusStudentDropdown();
+        alert(`「${currentClassName}」名單儲存成功！`);
+    }
+
+    function deleteCurrentClass() {
+        if (!currentClassName) return;
+        if (confirm(`確定要刪除「${currentClassName}」及其所有名單與加分紀錄嗎？`)) {
+            delete classesData[currentClassName];
+            saveToLocalStorage();
+            updateClassSelectOptions();
+        }
+    }
+
+    function saveToLocalStorage() {
+        localStorage.setItem('my_classes_data', JSON.stringify(classesData));
+    }
+
+    function updateTable() {
+        if (!currentClassName) return;
+        const students = classesData[currentClassName].students;
+        const tbody = document.getElementById('studentTableBody');
+        tbody.innerHTML = '';
+        
+        students.forEach(s => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${s.id}</td>
+                <td>${s.name}</td>
+                <td>${s.gender}</td>
+                <td>${s.drawn ? '已抽過' : '未抽'}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById('totalCount').innerText = students.length;
+        document.getElementById('statsDisplay').innerText = `總人數：${students.length} 人`;
+    }
+
+    function updateBonusStudentDropdown() {
+        if (!currentClassName) return;
+        const students = classesData[currentClassName].students;
+        const select = document.getElementById('bonusStudent');
+        select.innerHTML = '<option value="">-- 請選擇學生 --</option>';
+
+        students.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.name; // 以姓名為主
+            opt.textContent = `${s.id} 號 - ${s.name}`;
+            select.appendChild(opt);
+        });
+    }
+
+    function addBonusRecord() {
+        if (!currentClassName) return;
+        const studentName = document.getElementById('bonusStudent').value;
+        const date = document.getElementById('bonusDate').value;
+        const category = document.getElementById('bonusCategory').value;
+        const points = document.getElementById('bonusPoints').value;
+
+        if (!studentName) {
+            alert('請選擇加分學生！');
+            return;
+        }
+        if (!date) {
+            alert('請選擇日期！');
+            return;
+        }
+
+        const newRecord = {
+            id: Date.now(), // 唯一識別碼
+            date: date,
+            name: studentName,
+            category: category,
+            points: parseInt(points)
+        };
+
+        classesData[currentClassName].bonuses.unshift.call(classesData[currentClassName].bonuses, newRecord);
+        // 確保陣列存在
+        if (!classesData[currentClassName].bonuses) {
+            classesData[currentClassName].bonuses = [];
+        }
+        classesData[currentClassName].bonuses.unshift(newRecord);
+
+        saveToLocalStorage();
+        updateBonusTable();
+    }
+
+    function deleteBonusRecord(recordId) {
+        if (!currentClassName) return;
+        let bonuses = classesData[currentClassName].bonuses;
+        classesData[currentClassName].bonuses = bonuses.filter(b => b.id !== recordId);
+        saveToLocalStorage();
+        updateBonusTable();
+    }
+
+    function updateBonusTable() {
+        if (!currentClassName) return;
+        const bonuses = classesData[currentClassName].bonuses || [];
+        const tbody = document.getElementById('bonusTableBody');
+        tbody.innerHTML = '';
+
+        if (bonuses.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="color: #6b7280;">尚無加分紀錄</td></tr>`;
+            return;
+        }
+
+        bonuses.forEach(b => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${b.date}</td>
+                <td><strong>${b.name}</strong></td>
+                <td>${b.category}</td>
+                <td style="color: var(--success-color); font-weight: bold;">+${b.points} 分</td>
+                <td><button class="danger" style="padding: 4px 8px; font-size: 12px;" onclick="deleteBonusRecord(${b.id})">刪除</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function startDraw() {
+        if (!currentClassName) return;
+        let students = classesData[currentClassName].students;
+        const filter = document.getElementById('genderFilter').value;
+        
+        let pool = students.filter(s => {
+            if (filter === 'all') return true;
+            return s.gender === filter;
+        });
+
+        if (pool.length === 0) {
+            alert('沒有符合條件的學生可供抽籤！');
+            return;
+        }
+
+        const resultDisplay = document.getElementById('resultDisplay');
+        let counter = 0;
+        const maxCount = 15;
+        
+        document.getElementById('drawBtn').disabled = true;
+
+        const interval = setInterval(() => {
+            const randomStudent = pool[Math.floor(Math.random() * pool.length)];
+            resultDisplay.innerText = `${randomStudent.id} 號 - ${randomStudent.name}`;
+            counter++;
+
+            if (counter >= maxCount) {
+                clearInterval(interval);
+                const finalWinner = pool[Math.floor(Math.random() * pool.length)];
+                resultDisplay.innerText = `${finalWinner.id} 號 - ${finalWinner.name} (${finalWinner.gender})`;
+                
+                const target = students.find(s => s.id === finalWinner.id && s.name === finalWinner.name);
+                if (target) target.drawn = true;
+                
+                saveToLocalStorage();
+                updateTable();
+                document.getElementById('drawBtn').disabled = false;
+            }
+        }, 80);
+    }
+</script>
+
+</body>
+</html>
