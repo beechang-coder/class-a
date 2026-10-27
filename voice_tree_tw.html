@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>聲音養小樹</title>
+    <style>
+        body {
+            font-family: 'Microsoft JhengHei', sans-serif;
+            text-align: center;
+            background-color: #f4f9f4;
+            color: #333;
+            padding: 20px;
+        }
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            font-size: 16px;
+            padding: 10px 20px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            transition: 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button.reset {
+            background-color: #f44336;
+        }
+        button.reset:hover {
+            background-color: #da190b;
+        }
+        .db-display {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 20px 0;
+            color: #2e7d32;
+        }
+        .controls {
+            margin-top: 20px;
+            font-size: 16px;
+        }
+        input[type="number"] {
+            width: 60px;
+            padding: 5px;
+            font-size: 16px;
+            text-align: center;
+        }
+        .tree-box {
+            font-size: 80px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>聲音養小樹</h2>
+    
+    <div class="tree-box" id="tree">🌱</div>
+    
+    <div class="db-display" id="db-val">0 dB</div>
+    
+    <button id="start-btn">開始</button>
+    <button class="reset" id="reset-btn">重置</button>
+    
+    <p id="status-text">點擊開始按鈕 00:00</p>
+    
+    <div class="controls">
+        <label for="threshold">閾值: </label>
+        <input type="number" id="threshold" value="30">
+        <button id="apply-btn" style="padding: 5px 15px; margin: 0 0 0 5px; font-size: 14px;">應用</button>
+    </div>
+</div>
+
+<script>
+    // 這裡保留基本的前端互動宣告，方便使用者後續擴充功能
+    let isRunning = false;
+    let seconds = 0;
+    let timer = null;
+    let currentThreshold = 30;
+
+    const startBtn = document.getElementById('start-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const statusText = document.getElementById('status-text');
+    const thresholdInput = document.getElementById('threshold');
+    const applyBtn = document.getElementById('apply-btn');
+    const dbVal = document.getElementById('db-val');
+    const tree = document.getElementById('tree');
+
+    function updateTimerDisplay() {
+        const mins = String(Math.floor(seconds / 60)).padStart(2, '0');
+        const secs = String(seconds % 60).padStart(2, '0');
+        statusText.innerText = `執行中 ${mins}:${secs}`;
+    }
+
+    startBtn.addEventListener('click', () => {
+        if (!isRunning) {
+            isRunning = true;
+            startBtn.innerText = '暫停';
+            timer = setInterval(() => {
+                seconds++;
+                updateTimerDisplay();
+                
+                // 模擬一個隨機分貝數做為展示
+                let mockDb = Math.floor(Math.random() * 60);
+                dbVal.innerText = `${mockDb} dB`;
+                
+                if (mockDb > currentThreshold) {
+                    tree.innerText = '🌳';
+                } else {
+                    tree.innerText = '🌱';
+                }
+            }, 1000);
+        } else {
+            isRunning = false;
+            startBtn.innerText = '開始';
+            clearInterval(timer);
+            statusText.innerText = '已暫停';
+        }
+    });
+
+    resetBtn.addEventListener('click', () => {
+        isRunning = false;
+        clearInterval(timer);
+        seconds = 0;
+        startBtn.innerText = '開始';
+        statusText.innerText = '點擊開始按鈕 00:00';
+        dbVal.innerText = '0 dB';
+        tree.innerText = '🌱';
+    });
+
+    applyBtn.addEventListener('click', () => {
+        currentThreshold = parseInt(thresholdInput.value) || 30;
+        alert(`已將閾值應用為: ${currentThreshold} dB`);
+    });
+</script>
+
+</body>
+</html>
